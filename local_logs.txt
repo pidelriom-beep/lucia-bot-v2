@@ -1,0 +1,35 @@
+Mounting volume on: /var/lib/containers/railwayapp/bind-mounts/962a8b5a-f99e-494b-a121-4f98374df675/vol_nx93j1czqslm6a8i
+Starting Container
+
+> lucia-v.2@1.0.0 start
+> node app.js
+
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+🌐 Servidor Web escuchando en puerto 8080 (0.0.0.0)
+Conexión cerrada due to  Error: Stream Errored (restart required)
+    at WebSocketClient.<anonymous> (file:///app/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:780:13)
+    at WebSocketClient.emit (node:events:524:28)
+    at file:///app/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:464:35
+    at Object.decodeFrame (file:///app/node_modules/@whiskeysockets/baileys/lib/Utils/noise-handler.js:141:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async WebSocketClient.onMessageReceived (file:///app/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:441:9) {
+  data: { tag: 'stream:error', attrs: { code: '515' }, content: undefined },
+  isBoom: true,
+  isServer: true,
+  output: {
+    statusCode: 515,
+    payload: {
+      statusCode: 515,
+      error: 'Unknown',
+      message: 'Stream Errored (restart required)'
+    },
+    headers: {}
+  }
+} , reconnecting  true
+Conectado exitosamente a WhatsApp!
+Mensaje recibido: !reset
+🧹 Memoria borrada manualmente para 15977496502338@lid
+Mensaje recibido: Hola se me quebro un diente
+📦 Mensaje agrupado para 15977496502338@lid: Hola se me quebro un diente
+Mensaje recibido: Ok
+📦 Mensaje agrupado para 15977496502338@lid: Ok
