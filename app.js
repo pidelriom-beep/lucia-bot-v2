@@ -195,6 +195,14 @@ async function procesarMensajeAgrupado(jid) {
 
     console.log(`📦 Bloque de mensajes cerrado para ${jid.split('@')[0]}: "${combinedText}"`);
 
+    // Mostrar feedback visual de "Procesando..." para evitar silencios incómodos
+    try {
+        await sock.sendPresenceUpdate('composing', jid);
+        await sock.sendMessage(jid, { text: "_⏳ Consultando la agenda, un momento por favor..._" });
+    } catch (e) {
+        console.error("Error enviando feedback de procesamiento:", e);
+    }
+
     try {
         const currentContext = chatHistory[jid] || [];
 
@@ -412,10 +420,10 @@ async function startSock() {
                 clearTimeout(bufferTimeouts[jid]); // Detenemos el reloj anterior
             }
 
-            // Arrancamos el cronómetro nuevamente a 5 segundos
+            // Arrancamos el cronómetro nuevamente a 2 segundos
             bufferTimeouts[jid] = setTimeout(() => {
                 procesarMensajeAgrupado(jid);
-            }, 5000);
+            }, 2000);
         }
     });
 
@@ -547,10 +555,10 @@ async function startSock() {
                 // Hacemos que Lucía simule estar escribiendo mientras procesa/espera
                 await sock.sendPresenceUpdate('composing', jid);
 
-                // Arrancamos el reloj de 5 segundos estándar (se reinicia con cada mensaje nuevo)
+                // Arrancamos el reloj estándar (se reinicia con cada mensaje nuevo)
                 bufferTimeouts[jid] = setTimeout(() => {
                     procesarMensajeAgrupado(jid);
-                }, 5000);
+                }, 2000);
             }
         } catch (error) {
             console.error('Error procesando mensaje:', error);
