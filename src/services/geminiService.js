@@ -150,8 +150,14 @@ async function generateResponse(text, history = [], media = null) {
       const fechaChile = now.toLocaleString('es-CL', options);
       const DYNAMIC_PROMPT = `${SYSTEM_PROMPT}\n\n**FECHA Y HORA ACTUAL DEL SISTEMA:** Hoy es ${fechaChile}.`;
 
-      // 4. CONFIGURACIÓN DINÁMICA DE TOOLS
-      const modelConfig = { model: "gemini-3.1-pro-preview" };
+      // 4. CONFIGURACIÓN DINÁMICA DE TOOLS Y SYSTEM INSTRUCTION
+      const modelConfig = {
+         model: "gemini-3.1-pro-preview",
+         systemInstruction: {
+            role: "system",
+            parts: [{ text: DYNAMIC_PROMPT }]
+         }
+      };
 
       // INYECTAR LAS HERRAMIENTAS SOLO SI ROBOTINA ESTÁ ACTIVA
       if (isRobotinaActive) {
@@ -166,11 +172,7 @@ async function generateResponse(text, history = [], media = null) {
       }));
 
       const chat = model.startChat({
-         history: formattedHistory,
-         systemInstruction: {
-            role: "system",
-            parts: [{ text: DYNAMIC_PROMPT }]
-         }
+         history: formattedHistory
       });
 
       let msgParts = [{ text: text }];
