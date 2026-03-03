@@ -10,7 +10,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Log estricto de inicialización en Producción para el Feature Flag (tonos grises y azules)
 const initRobotinaFlag = String(process.env.ACTIVAR_ROBOTINA).toLowerCase() === 'true';
 console.log(`\x1b[90m[Init System]\x1b[0m \x1b[34mEstado del motor Robotina (geminiService):\x1b[0m \x1b[36m${initRobotinaFlag ? 'ACTIVO (ON)' : 'INACTIVO (OFF)'}\x1b[0m`);
-console.log(`\x1b[90m[Init System]\x1b[0m \x1b[34mMotor IA Principal cargado:\x1b[0m \x1b[36mgemini-3-flash\x1b[0m`);
+console.log(`\x1b[90m[Init System]\x1b[0m \x1b[34mMotor IA Principal cargado:\x1b[0m \x1b[36mgemini-3-flash-preview\x1b[0m`);
 
 // Configuración estricta de Herramientas
 const robotinaTools = [
@@ -153,7 +153,7 @@ async function generateResponse(text, history = [], media = null) {
 
       // 4. CONFIGURACIÓN DINÁMICA DE TOOLS Y SYSTEM INSTRUCTION
       const modelConfig = {
-         model: "gemini-3-flash",
+         model: "gemini-3-flash-preview",
          systemInstruction: {
             role: "system",
             parts: [{ text: DYNAMIC_PROMPT }]
