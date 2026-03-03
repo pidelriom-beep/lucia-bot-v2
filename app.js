@@ -198,7 +198,15 @@ async function procesarMensajeAgrupado(jid) {
     // Mostrar feedback visual de "Procesando..." para evitar silencios incómodos
     try {
         await sock.sendPresenceUpdate('composing', jid);
-        await sock.sendMessage(jid, { text: "_⏳ Consultando la agenda, un momento por favor..._" });
+
+        // Solo enviar el texto visual si el usuario parece estar interactuando con agendamientos
+        const includesAgendaWords = /agend|hora|cit|cup|sobrecup|eval|dol|urgenc/i.test(combinedText);
+        if (includesAgendaWords) {
+            if (/(hola|buen|ola|holi)/i.test(combinedText)) {
+                await sock.sendMessage(jid, { text: "¡Hola! 👋" });
+            }
+            await sock.sendMessage(jid, { text: "_⏳ Consultando la agenda, un momento por favor..._" });
+        }
     } catch (e) {
         console.error("Error enviando feedback de procesamiento:", e);
     }
@@ -250,9 +258,17 @@ async function procesarMensajeAgrupado(jid) {
                     `📱 *Teléfono:* ${formattedPhone}\n` +
                     `📋 *Motivo:* ${reason}`;
 
-                await sock.sendMessage(groupId, { text: notification });
+                try {
+                    await sock.sendMessage(groupId, { text: notification });
+                    console.log(`✅ Notificación enviada exitosamente al grupo de Isabel (${groupId})`);
+                    addLog('INFO', `Derivación enviada a grupo: ${patientName}`);
+                } catch (err) {
+                    console.error(`❌ Error enviando mensaje al grupo ${groupId}:`, err);
+                    addLog('ERROR', `Fallo al enviar al grupo de Isabel. Verifica permisos.`);
+                }
             } else {
-                console.error('❌ ISABEL_GROUP_ID no configurado en .env');
+                console.error('❌ ISABEL_GROUP_ID no configurado en las variables de entorno');
+                addLog('ERROR', 'Falta la variable ISABEL_GROUP_ID en Railway.');
             }
 
             aiResponse = aiResponse.replace(escalateRegex, '').trim();
@@ -420,10 +436,10 @@ async function startSock() {
                 clearTimeout(bufferTimeouts[jid]); // Detenemos el reloj anterior
             }
 
-            // Arrancamos el cronómetro nuevamente a 2 segundos
+            // Arrancamos el cronómetro nuevamente a 0.5 segundos
             bufferTimeouts[jid] = setTimeout(() => {
                 procesarMensajeAgrupado(jid);
-            }, 2000);
+            }, 500);
         }
     });
 
@@ -558,7 +574,7 @@ async function startSock() {
                 // Arrancamos el reloj estándar (se reinicia con cada mensaje nuevo)
                 bufferTimeouts[jid] = setTimeout(() => {
                     procesarMensajeAgrupado(jid);
-                }, 2000);
+                }, 500);
             }
         } catch (error) {
             console.error('Error procesando mensaje:', error);
