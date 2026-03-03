@@ -179,10 +179,16 @@ async function generateResponse(text, history = [], media = null) {
       let msgParts = [{ text: text }];
 
       if (media && media.data) {
+         // Fix for Gemini 2.5 Flash hanging on audio codecs string
+         let safeMimeType = media.mimeType;
+         if (safeMimeType.includes("audio/ogg")) {
+             safeMimeType = "audio/ogg";
+         }
+         
          msgParts.push({
             inlineData: {
                data: media.data.toString("base64"),
-               mimeType: media.mimeType
+               mimeType: safeMimeType
             }
          });
       }
