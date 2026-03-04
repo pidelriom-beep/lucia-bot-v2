@@ -18,20 +18,20 @@ const robotinaTools = [
       functionDeclarations: [
          {
             name: "google_calendar_check",
-            description: "Verifica qué slots disponibles hay en un día específico. Úsalo cuando el paciente solicite atención para una fecha concreta.",
+            description: "Revisa la disponibilidad en la agenda de la clínica. Pasa el día de la semana o término relativo exacto que mencionó el usuario, sin calcular fechas.",
             parameters: {
                type: "OBJECT",
                properties: {
-                  day_iso: {
+                  dia_relativo: {
                      type: "STRING",
-                     description: "Fecha a consultar en formato 'YYYY-MM-DD'. Ej: '2026-02-28'."
+                     description: "El día mencionado por el usuario. Valores permitidos: 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'hoy', 'mañana'."
                   },
                   duration: {
                      type: "INTEGER",
-                     description: "Duración estimada en minutos (suele ser 15 para evaluaciones o urgencias)."
+                     description: "Duración de la cita en minutos."
                   }
                },
-               required: ["day_iso", "duration"]
+               required: ["dia_relativo", "duration"]
             }
          },
          {
@@ -182,9 +182,9 @@ async function generateResponse(text, history = [], media = null) {
          // Fix for Gemini 2.5 Flash hanging on audio codecs string
          let safeMimeType = media.mimeType;
          if (safeMimeType.includes("audio/ogg")) {
-             safeMimeType = "audio/ogg";
+            safeMimeType = "audio/ogg";
          }
-         
+
          msgParts.push({
             inlineData: {
                data: media.data.toString("base64"),
@@ -198,7 +198,9 @@ async function generateResponse(text, history = [], media = null) {
       // Bloque de procesamiento de llamadas a herramientas (Tool Calls)
       // PROTECCIÓN: Solo procesar herramientas si Robotina está activa
       if (isRobotinaActive) {
+         let toolsWereCalled = false;
          while (result.response.functionCalls() && result.response.functionCalls().length > 0) {
+            toolsWereCalled = true;
             const functionCalls = result.response.functionCalls();
             const functionResponses = [];
 
@@ -207,8 +209,10 @@ async function generateResponse(text, history = [], media = null) {
                const args = toolCall.args;
                let apiResponse;
 
+               console.log(`\x1b[90m[Gemini Tool]\x1b[0m \x1b[34mEjecutando:\x1b[0m \x1b[36m${functionName}\x1b[0m`, args);
+
                if (functionName === 'google_calendar_check') {
-                  apiResponse = await robotinaApi.checkAvailability(args.day_iso, args.duration);
+                  apiResponse = await robotinaApi.checkAvailability(args.dia_relativo, args.duration);
                } else if (functionName === 'google_calendar_find_next') {
                   apiResponse = await robotinaApi.findNextAvailable(args.duration);
                } else if (functionName === 'google_calendar_insert') {
@@ -223,6 +227,8 @@ async function generateResponse(text, history = [], media = null) {
                   apiResponse = "❌ ERROR: Herramienta no reconocida.";
                }
 
+               console.log(`\x1b[90m[Gemini Tool]\x1b[0m \x1b[34mRespuesta de Robotina:\x1b[0m`, apiResponse);
+
                functionResponses.push({
                   functionResponse: {
                      name: functionName,
@@ -234,6 +240,13 @@ async function generateResponse(text, history = [], media = null) {
             // Enviamos los resultados de vuelta a Gemini. 
             // Si Gemini pide OTRA herramienta, el 'while' vuelve a girar.
             result = await chat.sendMessage(functionResponses);
+         }
+
+         // Fallback si Gemini decide no responder texto tras usar herramientas
+         let finalResponseText = result.response.text();
+         if ((!finalResponseText || finalResponseText.trim() === '') && toolsWereCalled) {
+            console.log(`\x1b[90m[Gemini Engine]\x1b[0m \x1b[33mGemini devolvió texto vacío tras usar herramientas. Forzando fallback.\x1b[0m`);
+            return "¡Perfecto! Todo listo en la agenda. ¡Te esperamos! 😊";
          }
       }
 

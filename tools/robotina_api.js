@@ -23,7 +23,10 @@ async function fetchRobotina(endpoint, bodyData) {
             throw new Error("ROBOTINA_API_URL no configurada en el entorno.");
         }
 
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+        const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+        const response = await fetch(`${cleanBaseUrl}${cleanEndpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -56,16 +59,14 @@ async function fetchRobotina(endpoint, bodyData) {
 /**
  * Herramienta: checkAvailability
  */
-async function checkAvailability(date, duration) {
-    // CAMBIAR A RUTA CORTA: /check
-    return await fetchRobotina('/check', { date, duration });
+async function checkAvailability(dia_relativo, duration) {
+    return await fetchRobotina('/check', { dia_relativo, duration });
 }
 
 /**
  * Herramienta: findNextAvailable
  */
 async function findNextAvailable(duration) {
-    // CAMBIAR A RUTA CORTA: /find_next
     return await fetchRobotina('/find_next', { duration });
 }
 
@@ -73,7 +74,6 @@ async function findNextAvailable(duration) {
  * Herramienta: insertEvent
  */
 async function insertEvent(name, phone, date, duration, is_sobrecupo) {
-    // CAMBIAR A RUTA CORTA: /insert
     return await fetchRobotina('/insert', { name, phone, date, duration, is_sobrecupo });
 }
 
