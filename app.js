@@ -214,8 +214,32 @@ async function procesarMensajeAgrupado(jid) {
     try {
         const currentContext = chatHistory[jid] || [];
 
-        let aiResponse = await generateResponse(combinedText, currentContext, finalMedia);
+        let aiResponse = await generateResponse(combinedText, currentContext, finalMedia, sock);
         console.log(`🤖 Respuesta cruda de Gemini:\n${aiResponse}\n-------------------`);
+
+        // 1. Nuevo Regex exclusivo para problemas de agenda llena
+        const ID_GRUPO_AGENDA = "120363407514449745@g.us";
+        const agendaRegex = /\[ALERTA_AGENDA_LLENA:\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/;
+        const matchAgenda = aiResponse.match(agendaRegex);
+
+        if (matchAgenda) {
+            const nombrePaciente = matchAgenda[1].trim();
+            const telefonoPaciente = matchAgenda[2].trim();
+            const diaSolicitado = matchAgenda[3].trim();
+            const numeroLimpio = telefonoPaciente.replace(/\D/g, '');
+
+            const mensajeAgendaLlena = `⚠️ *PACIENTE NO PUDO AGENDAR (AGENDA LLENA)* ⚠️\n\n*Paciente:* ${nombrePaciente}\n*Teléfono:* ${telefonoPaciente}\n*Día solicitado:* ${diaSolicitado}\n*Estado:* No hay cupos normales ni sobrecupos disponibles.\n*Chat directo:* wa.me/${numeroLimpio}`;
+
+            try {
+                await sock.sendMessage(ID_GRUPO_AGENDA, { text: mensajeAgendaLlena });
+                console.log(`✅ Alerta de agenda llena enviada para: ${nombrePaciente}`);
+            } catch (error) {
+                console.error("❌ Error enviando alerta de agenda:", error);
+            }
+
+            // Limpiamos el tag para que el paciente no lo vea
+            aiResponse = aiResponse.replace(matchAgenda[0], '').trim();
+        }
 
         const escalateRegex = /\[ESCALATE_TO_HUMAN:\s*([\s\S]*?)\]/;
         const escalateMatch = aiResponse.match(escalateRegex);
@@ -365,6 +389,18 @@ async function startSock() {
 
             console.log('✅ Lucía conectada exitosamente a Clínica Biodens');
             addLog('INFO', 'Conexión establecida exitosamente.');
+
+            // Escáner temporal de Grupos de WhatsApp
+            try {
+                const groups = await sock.groupFetchAllParticipating();
+                console.log('\n=== 📋 LISTA DE GRUPOS DEL BOT ===');
+                for (const id in groups) {
+                    console.log(`Nombre: "${groups[id].subject}"  |  ID: ${id}`);
+                }
+                console.log('==================================\n');
+            } catch (error) {
+                console.error('Error obteniendo la lista de grupos:', error);
+            }
 
             const now = new Date();
             const dia = now.getDay();

@@ -18,13 +18,13 @@ const robotinaTools = [
       functionDeclarations: [
          {
             name: "google_calendar_check",
-            description: "Revisa la disponibilidad en la agenda de la clínica. Pasa el día de la semana o término relativo exacto que mencionó el usuario, sin calcular fechas.",
+            description: "Revisa la disponibilidad en la agenda de la clínica. Pasa la fecha exacta en formato 'YYYY-MM-DD' si el paciente da un número de día (ej. para viernes 13 envía '2026-03-13'). Si solo da un día relativo, envía el día ('lunes', 'mañana').",
             parameters: {
                type: "OBJECT",
                properties: {
                   dia_relativo: {
                      type: "STRING",
-                     description: "El día mencionado por el usuario. Valores permitidos: 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'hoy', 'mañana'."
+                     description: "Fecha exacta 'YYYY-MM-DD' o término relativo ('lunes', 'martes', 'hoy', 'mañana')."
                   },
                   duration: {
                      type: "INTEGER",
