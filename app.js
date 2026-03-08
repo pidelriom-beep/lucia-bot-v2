@@ -9,7 +9,6 @@ const pino = require('pino');
 const { generateResponse } = require('./src/services/geminiService');
 
 // Folder for storing credentials
-// Folder for storing credentials
 const AUTH_FOLDER = 'auth_session_v2';
 const PORT = process.env.PORT || 3000;
 
@@ -21,6 +20,9 @@ let sock; // Global socket instance
 let currentQR = null;
 let isConnected = false;
 const logs = []; // Log buffer
+
+// 🛑 Memoria temporal para chats silenciados (Human Handoff)
+const chatsSilenciados = new Set();
 
 // ==========================================
 // 🤫 MEMORIA DEL PACTO DE NO AGRESIÓN
@@ -483,44 +485,78 @@ async function startSock() {
     // 👂 OREJA 2: RECEPTOR DE MENSAJES (MESSAGES UPSERT)
     // ============================================================================
     sock.ev.on('messages.upsert', async (m) => {
-        try {
-            const msg = m.messages[0];
+            try {
+                const msg = m.messages[0];
 
-            if (!msg.message) return;
+                if (!msg.message) return;
 
-            const remitente = msg.key.remoteJid;
-            const conversationType = getContentType(msg.message);
-            let textMessage = null;
-            let media = null;
+                const remitente = msg.key.remoteJid;
+                const conversationType = getContentType(msg.message);
+                let textMessage = null;
+                let media = null;
 
-            if (conversationType === 'conversation') {
-                textMessage = msg.message.conversation;
-            } else if (conversationType === 'extendedTextMessage') {
-                textMessage = msg.message.extendedTextMessage?.text;
-            } else if (conversationType === 'audioMessage') {
-                console.log('🎙️ Audio recibido. Procesando...');
-                addLog('INFO', 'Audio recibido...');
-                const buffer = await downloadMediaMessage(msg, 'buffer', {});
-                media = { data: buffer, mimeType: msg.message.audioMessage.mimetype };
-                textMessage = "(El paciente envió un audio)";
-            } else if (conversationType === 'imageMessage') {
-                console.log('📸 Imagen recibida. Analizando...');
-                addLog('INFO', 'Imagen recibida...');
-                const buffer = await downloadMediaMessage(msg, 'buffer', {});
-                media = { data: buffer, mimeType: msg.message.imageMessage.mimetype };
-                textMessage = msg.message.imageMessage.caption || "(El paciente envió una imagen)";
-            } else if (conversationType === 'documentMessage') {
-                const mimeType = msg.message.documentMessage.mimetype;
-                if (mimeType.startsWith('image/') || mimeType === 'application/pdf') {
-                    console.log(`📄 Documento (${mimeType}) recibido. Analizando...`);
-                    addLog('INFO', `Documento (${mimeType}) recibido...`);
+                if (conversationType === 'conversation') {
+                    textMessage = msg.message.conversation;
+                } else if (conversationType === 'extendedTextMessage') {
+                    textMessage = msg.message.extendedTextMessage?.text;
+                } else if (conversationType === 'audioMessage') {
+                    console.log('🎙️ Audio recibido. Procesando...');
+                    addLog('INFO', 'Audio recibido...');
                     const buffer = await downloadMediaMessage(msg, 'buffer', {});
-                    media = { data: buffer, mimeType };
-                    textMessage = msg.message.documentMessage.caption || "(El paciente envió un documento)";
+                    media = { data: buffer, mimeType: msg.message.audioMessage.mimetype };
+                    textMessage = "(El paciente envió un audio)";
+                } else if (conversationType === 'imageMessage') {
+                    console.log('📸 Imagen recibida. Analizando...');
+                    addLog('INFO', 'Imagen recibida...');
+                    const buffer = await downloadMediaMessage(msg, 'buffer', {});
+                    media = { data: buffer, mimeType: msg.message.imageMessage.mimetype };
+                    textMessage = msg.message.imageMessage.caption || "(El paciente envió una imagen)";
+                } else if (conversationType === 'documentMessage') {
+                    const mimeType = msg.message.documentMessage.mimetype;
+                    if (mimeType.startsWith('image/') || mimeType === 'application/pdf') {
+                        console.log(`📄 Documento (${mimeType}) recibido. Analizando...`);
+                        addLog('INFO', `Documento (${mimeType}) recibido...`);
+                        const buffer = await downloadMediaMessage(msg, 'buffer', {});
+                        media = { data: buffer, mimeType };
+                        textMessage = msg.message.documentMessage.caption || "(El paciente envió un documento)";
+                    }
                 }
-            }
 
-            // ==========================================================
+                // ---------------------------------------------------------
+                // 🛑 SISTEMA DE CONTROL HUMANO (!humano / !lucia)
+                // ---------------------------------------------------------
+                const textoLimpio = (textMessage || "").trim().toLowerCase();
+
+                // 1. Si el mensaje lo enviaste TÚ (desde tu WhatsApp)
+                if (msg.key.fromMe) {
+                    if (textoLimpio === '!humano') {
+                        chatsSilenciados.add(remitente);
+                        console.log(`🔇 MODO SILENCIO ACTIVO: Lucía ya no responderá a ${remitente}`);
+                        addLog('INFO', `Modo !humano activado para ${remitente}`);
+                        return; 
+                    } 
+                    else if (textoLimpio === '!lucia') {
+                        chatsSilenciados.delete(remitente);
+                        console.log(`🔊 MODO SILENCIO DESACTIVADO: Lucía vuelve a atender a ${remitente}`);
+                        addLog('INFO', `Modo !lucia activado para ${remitente}`);
+                        return;
+                    }
+                    // Ignora tus otros mensajes normales para que Lucía no te responda a ti mismo
+                    return; 
+                }
+
+                // 2. Si el mensaje es del PACIENTE, verificamos si está silenciado
+                if (chatsSilenciados.has(remitente)) {
+                    console.log(`[PAUSA] Ignorando mensaje de ${remitente} (Modo !humano activo).`);
+                    return; // 🛑 Corta la ejecución aquí, el mensaje no llega a Gemini
+                }
+                
+                // Si el mensaje está vacío y no hay multimedia, ignorar
+                if (!textMessage && !media) return;
+                // ---------------------------------------------------------
+                
+                // 
+==========================================================
             // 🤫 PACTO DE NO AGRESIÓN: LUCÍA RESPETA A TERESA (HASTA MEDIANOCHE Y 8 DÍGITOS)
             // ==========================================================
             if (msg.key.fromMe && textMessage && textMessage.includes('soy Teresa de Clínica Biodens')) {
