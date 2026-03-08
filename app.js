@@ -555,8 +555,6 @@ async function startSock() {
                 if (!textMessage && !media) return;
                 // ---------------------------------------------------------
                 
-                // 
-==========================================================
             // 🤫 PACTO DE NO AGRESIÓN: LUCÍA RESPETA A TERESA (HASTA MEDIANOCHE Y 8 DÍGITOS)
             // ==========================================================
             if (msg.key.fromMe && textMessage && textMessage.includes('soy Teresa de Clínica Biodens')) {
