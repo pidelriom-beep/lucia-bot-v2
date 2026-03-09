@@ -601,7 +601,7 @@ async function startSock() {
             // Si llegamos hasta aquí y el mensaje es propio (fromMe), lo ignoramos para no hacer eco
             if (msg.key.fromMe) return;
 
-            // Lógica normal de Lucía
+         // Lógica normal de Lucía
             delete require.cache[require.resolve('./src/config/blacklist')];
             const blacklist = require('./src/config/blacklist') || [];
             const senderNumber = remitente.split('@')[0];
