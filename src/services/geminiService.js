@@ -149,7 +149,12 @@ async function generateResponse(text, history = [], media = null) {
       const now = new Date();
       const options = { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
       const fechaChile = now.toLocaleString('es-CL', options);
-      const DYNAMIC_PROMPT = `${SYSTEM_PROMPT}\n\n**FECHA Y HORA ACTUAL DEL SISTEMA:** Hoy es ${fechaChile}.`;
+      
+      // 🚨 REGLA ESTRICTA DE PROTOCOLO (PREGUNTAR POR EL DOCTOR PRIMERO)
+      const REGLA_DOCTOR = `\n\n**REGLA ESTRICTA DE AGENDAMIENTO:** Cada vez que un paciente solicite tomar, cambiar, cancelar o consultar una hora, TU PRIMERA ACCIÓN OBLIGATORIA Y ABSOLUTA es preguntarle con qué doctor/dentista desea atenderse. PROHIBICIÓN: Bajo ninguna circunstancia debes usar las herramientas del calendario ni buscar fechas sin antes haber confirmado el nombre del profesional. Las agendas varían según cada doctor. Puedes ofrecer la lista de especialistas si el paciente lo requiere.`;
+
+      // ENSAMBLAJE FINAL DEL CEREBRO DE LUCÍA
+      const DYNAMIC_PROMPT = `${SYSTEM_PROMPT}${REGLA_DOCTOR}\n\n**FECHA Y HORA ACTUAL DEL SISTEMA:** Hoy es ${fechaChile}.`;
 
       // 4. CONFIGURACIÓN DINÁMICA DE TOOLS Y SYSTEM INSTRUCTION
       const modelConfig = {
