@@ -604,9 +604,18 @@ async function startSock() {
          // Lógica normal de Lucía
             delete require.cache[require.resolve('./src/config/blacklist')];
             const blacklist = require('./src/config/blacklist') || [];
-            const senderNumber = remitente.split('@')[0];
+            
+            // 💡 Cortamos cualquier número de dispositivo extra (ej. WhatsApp Web)
+            const senderNumber = remitente.split('@')[0].split(':')[0];
 
-            if (blacklist.includes(senderNumber)) {
+            // 🛡️ FILTRO BLINDADO ANTI-ERRORES DE WHATSAPP
+            const estaBloqueado = blacklist.some(numeroLista => {
+                const numLimpio = String(numeroLista).trim();
+                // Bloquea si es idéntico, o si al menos los últimos 8 dígitos coinciden
+                return senderNumber === numLimpio || senderNumber.endsWith(numLimpio.slice(-8));
+            });
+
+            if (estaBloqueado) {
                 console.log(`🚫 Número bloqueado ignorado: ${senderNumber}`);
                 addLog('WARNING', `Mensaje ignorado de bloqueado: ${senderNumber}`);
                 return;
